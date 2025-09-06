@@ -1,0 +1,60 @@
+# AML 360º Dependencies
+
+# Core ML & Data Science
+numpy>=1.21.0
+pandas>=1.5.0
+scikit-learn>=1.2.0
+lightgbm>=3.3.0
+xgboost>=1.6.0
+catboost>=1.1.0
+
+# Deep Learning & Graph
+torch>=1.12.0
+torch-geometric>=2.2.0
+tensorflow>=2.10.0
+
+# Bayesian & Statistical
+pymc3>=3.11.0
+arviz>=0.12.0
+scipy>=1.9.0
+statsmodels>=0.13.0
+
+# Explainability
+shap>=0.41.0
+lime>=0.2.0
+
+# API & Production
+fastapi>=0.95.0
+uvicorn[standard]>=0.20.0
+pydantic>=1.10.0
+redis>=4.5.0
+celery>=5.2.0
+
+# Database & Storage
+google-cloud-bigquery>=3.4.0
+sqlalchemy>=1.4.0
+pymongo>=4.3.0
+
+# Monitoring & Observability
+prometheus-client>=0.15.0
+structlog>=22.3.0
+sentry-sdk>=1.15.0
+
+# Utilities
+joblib>=1.2.0
+tqdm>=4.64.0
+python-dotenv>=0.19.0
+pyyaml>=6.0
+click>=8.1.0
+
+# Testing
+pytest>=7.2.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.0.0
+
+# Development
+jupyter>=1.0.0
+jupyterlab>=3.6.0
+black>=22.12.0
+isort>=5.12.0
+flake8>=6.0.0

@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  aml-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+      - "9090:9090"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MODEL_PATH=/models/aml_ensemble.pkl
+      - API_KEY_HASH=${API_KEY_HASH}
+    volumes:
+      - ../models:/models:ro
+      - ../config:/app/config:ro
+    depends_on:
+      - redis
+      - prometheus
+    networks:
+      - aml-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - aml-network
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    networks:
+      - aml-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - aml-network
+    restart: unless-stopped
+
+  jupyter:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    volumes:
+      - ../notebooks:/app/notebooks
+      - ../data:/app/data
+      - ../models:/app/models
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+    networks:
+      - aml-network
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  aml-network:
+    driver: bridge

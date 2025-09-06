@@ -1,0 +1,331 @@
+# AML 360º Configuration
+
+# Database Configuration
+database:
+  bigquery:
+    project_id: "aml-production-project"
+    dataset_id: "aml"
+    location: "US"
+    credentials_path: "/secrets/bigquery-key.json"
+    
+  redis:
+    host: "redis-cluster.internal"
+    port: 6379
+    password: "${REDIS_PASSWORD}"
+    db: 0
+    max_connections: 100
+    decode_responses: true
+
+# Feature Engineering
+features:
+  temporal_windows:
+    - "1h"
+    - "24h" 
+    - "7d"
+    - "30d"
+    
+  statistical_methods:
+    evt:
+      enabled: true
+      percentile_threshold: 95
+      min_samples: 100
+    
+    garch:
+      enabled: true
+      p: 1
+      q: 1
+      window_size: 30
+    
+    burstiness:
+      enabled: true
+      fano_threshold: 2.0
+      clark_evans_threshold: 1.0
+    
+    woe_iv:
+      enabled: true
+      min_iv_threshold: 0.02
+      max_bins: 10
+      
+  graph_features:
+    enabled: true
+    max_hops: 3
+    community_detection: "louvain"
+    centrality_measures:
+      - "degree"
+      - "betweenness" 
+      - "eigenvector"
+      - "pagerank"
+      
+  sequence_features:
+    enabled: true
+    max_sequence_length: 100
+    pattern_detection:
+      - "smurfing"
+      - "layering"
+      - "structuring"
+
+# Model Configuration
+models:
+  regulatory_scorecard:
+    enabled: true
+    model_type: "logistic_regression"
+    regularization: 0.01
+    max_features: 20
+    class_weight: "balanced"
+    
+  tabular_ensemble:
+    enabled: true
+    models:
+      lightgbm:
+        enabled: true
+        objective: "binary"
+        num_leaves: 31
+        learning_rate: 0.05
+        feature_fraction: 0.9
+        bagging_fraction: 0.8
+        focal_loss:
+          enabled: true
+          alpha: 0.25
+          gamma: 2.0
+          
+      xgboost:
+        enabled: true
+        n_estimators: 1000
+        learning_rate: 0.05
+        max_depth: 6
+        subsample: 0.8
+        colsample_bytree: 0.9
+        
+      catboost:
+        enabled: false
+        iterations: 1000
+        learning_rate: 0.05
+        depth: 6
+        
+  anomaly_detection:
+    enabled: true
+    contamination: 0.05
+    methods:
+      isolation_forest:
+        enabled: true
+        n_estimators: 100
+        
+      local_outlier_factor:
+        enabled: true
+        n_neighbors: 20
+        
+      elliptic_envelope:
+        enabled: true
+        support_fraction: 0.8
+        
+  graph_neural_network:
+    enabled: true
+    architecture: "gat_sage"
+    hidden_dim: 64
+    num_heads: 8
+    num_layers: 2
+    dropout: 0.3
+    
+  sequential_models:
+    enabled: true
+    architecture: "lstm_attention"
+    hidden_size: 128
+    num_layers: 2
+    bidirectional: true
+    
+  bayesian_fusion:
+    enabled: true
+    mcmc_samples: 2000
+    tune_samples: 1000
+    chains: 2
+
+# Training Configuration
+training:
+  cross_validation:
+    method: "time_series_split"
+    n_splits: 5
+    test_size: 0.2
+    
+  optimization:
+    hyperparameter_tuning:
+      enabled: true
+      method: "bayesian"  # bayesian, grid, random
+      n_trials: 100
+      
+    early_stopping:
+      enabled: true
+      patience: 100
+      min_delta: 0.001
+      
+  metrics:
+    primary: "pr_auc"
+    secondary:
+      - "auc"
+      - "recall_at_workload"
+      - "precision"
+      - "f1_score"
+    
+  target_performance:
+    pr_auc_min: 0.75
+    recall_at_20pct_workload_min: 0.80
+    precision_min: 0.70
+
+# Production Configuration  
+production:
+  api:
+    host: "0.0.0.0"
+    port: 8000
+    workers: 4
+    max_batch_size: 1000
+    timeout: 30
+    
+  security:
+    api_key_required: true
+    api_key_hash: "${API_KEY_HASH}"
+    rate_limiting:
+      enabled: true
+      requests_per_minute: 1000
+      
+  caching:
+    enabled: true
+    ttl_seconds: 3600
+    max_memory: "2GB"
+    
+  monitoring:
+    prometheus:
+      enabled: true
+      port: 9090
+      
+    logging:
+      level: "INFO"
+      format: "json"
+      
+    alerts:
+      enabled: true
+      channels:
+        - "slack"
+        - "email"
+      thresholds:
+        error_rate: 0.01
+        latency_p95: 500  # milliseconds
+        
+  model_serving:
+    champion_challenger:
+      enabled: true
+      challenger_traffic_percentage: 10
+      
+    a_b_testing:
+      enabled: true
+      experiment_duration_days: 7
+      
+    canary_deployment:
+      enabled: true
+      canary_percentage: 5
+      success_threshold: 0.99
+
+# Cost Matrix for Decision Optimization
+cost_matrix:
+  false_negative_cost: 10  # Cost of missing a true positive (SAR)
+  false_positive_cost: 1   # Cost of false alarm
+  review_cost_per_case: 0.1  # Cost of analyst review time
+  
+# Regulatory Compliance
+compliance:
+  explainability:
+    required: true
+    methods:
+      - "shap"
+      - "lime" 
+      - "reason_codes"
+      
+  model_governance:
+    version_control: true
+    approval_workflow: true
+    documentation_required: true
+    
+  audit_trail:
+    enabled: true
+    retention_days: 2555  # 7 years
+    
+  fairness:
+    enabled: true
+    protected_attributes: []  # Empty for AML (focus on entities, not individuals)
+    bias_metrics:
+      - "demographic_parity"
+      - "equalized_odds"
+
+# Data Drift Monitoring
+drift_monitoring:
+  enabled: true
+  methods:
+    - "psi"  # Population Stability Index
+    - "ks"   # Kolmogorov-Smirnov
+    - "js"   # Jensen-Shannon divergence
+    
+  thresholds:
+    psi_warning: 0.1
+    psi_critical: 0.25
+    ks_critical: 0.2
+    
+  alert_frequency: "daily"
+  
+# Performance Benchmarks
+benchmarks:
+  latency:
+    single_prediction_ms: 200
+    batch_1000_predictions_s: 30
+    
+  throughput:
+    predictions_per_second: 5000
+    concurrent_users: 100
+    
+  availability:
+    uptime_target: 0.999  # 99.9%
+    max_downtime_minutes_per_month: 43
+
+# Resource Configuration
+resources:
+  compute:
+    cpu_cores: 16
+    memory_gb: 64
+    gpu_enabled: false
+    
+  storage:
+    feature_store_size_gb: 1000
+    model_artifacts_size_gb: 100
+    logs_retention_days: 90
+    
+  networking:
+    max_connections: 1000
+    connection_timeout_s: 30
+    
+# Development & Testing
+development:
+  synthetic_data:
+    enabled: true
+    generator: "timegan"
+    samples: 100000
+    
+  testing:
+    unit_tests: true
+    integration_tests: true
+    performance_tests: true
+    
+  notebooks:
+    jupyter_enabled: true
+    jupyterlab_enabled: true
+    
+# Backup & Disaster Recovery
+backup:
+  enabled: true
+  frequency: "daily"
+  retention_days: 30
+  storage_location: "gs://aml-backups/"
+  
+disaster_recovery:
+  enabled: true
+  rpo_hours: 4   # Recovery Point Objective
+  rto_hours: 2   # Recovery Time Objective
+  backup_regions:
+    - "us-west1"
+    - "us-east1"
